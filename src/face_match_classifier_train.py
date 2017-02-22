@@ -13,6 +13,7 @@ import facenet
 import align.detect_face
 import csv
 from os.path import isdir, isfile
+import random
 
 
 def is_image(image_name):
@@ -73,10 +74,71 @@ def main(args):
             embeddings = tf.get_default_graph().get_tensor_by_name("embeddings:0")
             phase_train_placeholder = tf.get_default_graph().get_tensor_by_name("phase_train:0")
 
+
+
+            # diff person
+            print('Loading images for different face from directory: {}'.format(args.image_dir))
+            diff_person_dists = []
+            diff_person_embedding_dists = []
+            count = 1
+            sample_size = 2
+            person_dir_list = os.listdir(args.image_dir)
+            person_dir_count = len(person_dir_list)
+
+            for i in range(person_dir_count - sample_size):
+
+                person_1_dir = os.path.join(args.image_dir, person_dir_list[i])
+                if not isdir(person_1_dir):
+                    continue
+
+                person_1_list = os.listdir(person_1_dir)
+                img_1 = os.path.join(person_1_dir, person_1_list[0])
+                index_samples = random.sample(range(i + 1, person_dir_count), sample_size)
+
+                for j in index_samples:
+                    person_2_dir = os.path.join(args.image_dir, person_dir_list[j])
+                    if not isdir(person_2_dir):
+                        continue
+                    person_2_list = os.listdir(person_2_dir)
+                    img_2 = os.path.join(person_2_dir, person_2_list[0])
+
+                    # load, detect and align faces
+                    images = load_and_align_data([img_1, img_2], args.image_size, args.margin, args.gpu_memory_fraction)
+
+                    # Run forward pass to calculate embeddings
+                    feed_dict = {images_placeholder: images, phase_train_placeholder: False}
+                    emb = sess.run(embeddings, feed_dict=feed_dict)
+
+                    # keep track of embedding
+                    diff_person_embedding_dists.append(np.subtract(emb[0, :], emb[1, :]).tolist())
+
+                    dist = np.sqrt(np.sum(np.square(np.subtract(emb[0, :], emb[1, :]))))
+                    diff_person_dists.append((img_1, img_2, dist))
+                    count += 1
+                    if count % 100 == 0:
+                        csv_path = os.path.join(args.output_dir, "result_diff_" + str(count) + ".csv")
+                        write_csv(csv_path, diff_person_dists)
+                        diff_person_dists = []
+
+                        embedding_csv = os.path.join(args.output_dir, "result_embedding_diff_" + str(count) + ".csv")
+                        write_csv(embedding_csv, diff_person_embedding_dists)
+                        diff_person_embedding_dists = []
+
+            # collect remaining
+            diff_person_file = os.path.join(args.output_dir, "result_diff_last.csv")
+            write_csv(diff_person_file, diff_person_dists)
+            embedding_csv = os.path.join(args.output_dir, "result_embedding_diff_last.csv")
+            write_csv(embedding_csv, diff_person_embedding_dists)
+
+
+
+
             # same person dist arr
             same_person_dists = []
-
-            print('Loading images from directory: {}'.format(args.image_dir))
+            same_person_embedding_dists = []
+            count = 1
+            sample_size = 4
+            print('Loading images for same face from directory: {}'.format(args.image_dir))
             for person_folder in os.listdir(args.image_dir):
                 person_img_folder = os.path.join(args.image_dir, person_folder)
 
@@ -86,24 +148,49 @@ def main(args):
 
                 person_imgs =[x for x in os.listdir(person_img_folder) if is_image(x)]
                 imgs_count = len(person_imgs)
-                print('Found {} images from {}'.format(imgs_count, person_img_folder))
+                person_img_sample_count = 0
+                # print('Found {} images from {}'.format(imgs_count, person_img_folder))
                 for i in range(imgs_count-1):
                     img_1 = os.path.join(person_img_folder, person_imgs[i])
-                    for j in range(i+1, imgs_count):
-                        img_2 = os.path.join(person_img_folder, person_imgs[j])
 
-                        # load, detect and align faces
-                        images = load_and_align_data([img_1, img_2], args.image_size, args.margin, args.gpu_memory_fraction)
+                    # only compare i and i+1
+                    j = i+1
+                    if j>imgs_count-1 or person_img_sample_count > sample_size:
+                        break
+                    img_2 = os.path.join(person_img_folder, person_imgs[j])
 
-                        # Run forward pass to calculate embeddings
-                        feed_dict = {images_placeholder: images, phase_train_placeholder: False}
-                        emb = sess.run(embeddings, feed_dict=feed_dict)
-                        dist = np.sqrt(np.sum(np.square(np.subtract(emb[0, :], emb[1, :]))))
-                        same_person_dists.append((img_1, img_2, dist))
+                    # load, detect and align faces
+                    images = load_and_align_data([img_1, img_2], args.image_size, args.margin, args.gpu_memory_fraction)
 
-            with open(args.output_file, 'a') as f:
-                a = csv.writer(f, delimiter=',')
-                a.writerows(same_person_dists)
+                    # Run forward pass to calculate embeddings
+                    feed_dict = {images_placeholder: images, phase_train_placeholder: False}
+                    emb = sess.run(embeddings, feed_dict=feed_dict)
+
+                    # keep track of embedding
+                    same_person_embedding_dists.append(np.subtract(emb[0, :], emb[1, :]).tolist())
+
+                    dist = np.sqrt(np.sum(np.square(np.subtract(emb[0, :], emb[1, :]))))
+                    same_person_dists.append((img_1, img_2, dist))
+                    count += 1
+                    person_img_sample_count += 1
+
+                    if count%100==0:
+                        csv_path = os.path.join(args.output_dir, "result_same_"+str(count)+".csv")
+                        write_csv(csv_path, same_person_dists)
+                        same_person_dists = []
+
+                        embedding_csv = os.path.join(args.output_dir, "result_embedding_same_" + str(count) + ".csv")
+                        write_csv(embedding_csv, same_person_embedding_dists)
+                        same_person_embedding_dists = []
+
+            # collect remaining
+            same_person_file = os.path.join(args.output_dir, "result_same_last.csv")
+            write_csv(same_person_file, same_person_dists)
+            embedding_csv = os.path.join(args.output_dir, "result_embedding_same_last.csv")
+            write_csv(embedding_csv, same_person_embedding_dists)
+
+
+
 
             # nrof_images = len(args.image_files)
             #
@@ -126,12 +213,21 @@ def main(args):
             #     print('')
 
 
+
+
+def write_csv(path, data):
+    with open(path, 'a') as f:
+        a = csv.writer(f, delimiter=',')
+        a.writerows(data)
+        print("result saved to {}".format(path))
+
+
 def parse_arguments(argv):
     parser = argparse.ArgumentParser()
 
     parser.add_argument('model_dir', type=str, help='Directory containing the meta_file and ckpt_file')
     parser.add_argument('image_dir', type=str, help='Images to compare')
-    parser.add_argument('output_file', type=str, help='Output file for dist computation')
+    parser.add_argument('output_dir', type=str, help='Output file for dist computation')
     parser.add_argument('--image_size', type=int,
                         help='Image size (height, width) in pixels.', default=160)
     parser.add_argument('--margin', type=int,
