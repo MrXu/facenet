@@ -96,3 +96,5 @@ ENV/
 models/*
 
 train/*.csv
+
+log/*
