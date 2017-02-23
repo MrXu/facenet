@@ -45,11 +45,11 @@ RUN wget https://github.com/Itseez/opencv/archive/3.1.0.zip -O /opencv.zip\
 && rm /opencv.zip \
 && rm -r /opencv-3.1.0
 
-RUN mkdir /app
+RUN mkdir /facenet && cd /facenet && mkdir app && mkdir img && mkdir model && mkdir log
 
-COPY . /app/.
+COPY requirements_api.txt /facenet/app/.
 
-WORKDIR /app
+WORKDIR /facenet/app
 
 RUN pip install -r requirements_api.txt
 

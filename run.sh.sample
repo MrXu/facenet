@@ -1,11 +1,14 @@
-LOG_FOLDER='/Users/xuwei/Desktop/docker_temp/log'
-IMG_FOLDER='/Users/xuwei/Pictures/FaceMatchPic'
-PYTHON_CODE='/Users/xuwei/Python/FaceMatch'
+LOG_DIR='/home/ubuntu/facenet_log'
+IMG_DIR='/home/ubuntu/facenet_img'
+MODEL_DIR='/home/ubuntu/facenet_model'
+PYTHON_CODE='/home/ubuntu/facenet'
 
 echo 'running container with volume config folder'
-sudo docker run -d  -v $IMG_FOLDER:/home/img        \
-                    -v $PYTHON_CODE:/root/openface/demos   \
-                    -p 5000:5000          \
-                    --name face_match_container \
-                    --restart=on-failure:10 \
+sudo docker run -d  -v $IMG_DIR:/facenet/img            \
+                    -v $LOG_DIR:/facenet/log            \
+		            -v $MODEL_DIR:/facenet/model	    \
+		            -v $PYTHON_CODE:/facenet/app
+                    -p 5000:5000                        \
+                    --name face_match_container         \
+                    --restart=on-failure:10             \
                     face_match_image
