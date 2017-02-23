@@ -98,3 +98,8 @@ models/*
 train/*.csv
 
 log/*
+
+deploy.sh
+run.sh
+update.sh
+clean.sh
