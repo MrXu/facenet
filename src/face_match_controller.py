@@ -67,7 +67,7 @@ def compare_two_faces(face_1, face_2):
 
 
 def write_to_db(face_1, face_2, dist):
-    logger.info("Distance Compute | {}".format({face_1:face_1, face_2:face_2, dist:dist}))
+    logger.info("Distance Compute | {}".format({"face_1":face_1, "face_2":face_2, "dist":dist}))
 
 
 def load_and_align_data(image_paths, image_size, margin, gpu_memory_fraction):
