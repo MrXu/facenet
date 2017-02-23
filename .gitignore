@@ -103,3 +103,4 @@ deploy.sh
 run.sh
 update.sh
 clean.sh
+app_config.ini
