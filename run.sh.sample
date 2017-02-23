@@ -7,7 +7,7 @@ echo 'running container with volume config folder'
 sudo docker run -d  -v $IMG_DIR:/facenet/img            \
                     -v $LOG_DIR:/facenet/log            \
 		            -v $MODEL_DIR:/facenet/model	    \
-		            -v $PYTHON_CODE:/facenet/app
+		            -v $PYTHON_CODE:/facenet/app        \
                     -p 5000:5000                        \
                     --name face_match_container         \
                     --restart=on-failure:10             \
