@@ -1,0 +1,15 @@
+#!/bin/bash
+
+IMAGE='face_match_image'
+CONTAINER='face_match_container'
+
+echo 'stopping docker container: $CONTAINER'
+sudo docker kill $CONTAINER
+
+echo 'removing docker container: $CONTAINER'
+sudo docker rm $CONTAINER
+
+echo 'removing docker image: $IMAGE'
+sudo docker rmi $IMAGE
+
+sh deploy.sh

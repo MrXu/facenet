@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo 'building face-match docker image'
+sudo docker build -t face_match_image .
+
+#echo 'creating docker network'
+#docker network create --subnet=172.18.0.0/16 dockernet
+
+sh run.sh
