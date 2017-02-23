@@ -1,6 +1,6 @@
 # coding: utf-8
 
-import simplejson
+from flask import jsonify
 
 
 def json_response(error, data):
@@ -8,7 +8,7 @@ def json_response(error, data):
     if error:
         response["error"] = error
     response["data"] = data
-    return simplejson.dumps(response)
+    return jsonify(response)
 
 
 def error(code, message):
