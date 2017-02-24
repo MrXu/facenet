@@ -6,6 +6,7 @@ from flask_cors import cross_origin
 
 from util.logger import create_logger
 from util.response import json_response, error
+from util.image import save_image
 from src import face_match_controller
 import os
 from settings import IMG_PATH
@@ -24,9 +25,8 @@ def compare_face():
 
     faces = []
     for f in uploaded_files:
-        file_path = os.path.join(IMG_PATH, f.filename)
+        file_path = save_image(IMG_PATH, f)
         faces.append(file_path)
-        f.save(file_path)
 
     try:
         start_time = time.time()
@@ -38,9 +38,12 @@ def compare_face():
             "valid": result,
             "time_taken": time.time() - start_time
         })
-    except Exception as e:
+    except IndexError as e:
         logger.exception(e)
         return json_response(error(400, "cannot find face in one or both image"), None)
+    except Exception as e:
+        logger.exception(e)
+        return json_response(error(400, "cannot determine similarity"), None)
 
 
 @app.route('/facematch/health_check', methods=['GET'])
